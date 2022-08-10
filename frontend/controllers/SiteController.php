@@ -1,4 +1,7 @@
 <?php
+/** @var yii\web\View $this */
+/** @var yii\bootstrap4\ActiveForm $form */
+/** @var \frontend\models\ContactForm $model */
 
 namespace frontend\controllers;
 
@@ -15,12 +18,81 @@ use frontend\models\PasswordResetRequestForm;
 use frontend\models\ResetPasswordForm;
 use frontend\models\SignupForm;
 use frontend\models\ContactForm;
+use app\models\EntryForm;
 
 /**
  * Site controller
  */
 class SiteController extends Controller
 {
+
+    public function actionEntry()
+    {
+        $model = new EntryForm;
+
+
+        if ($model->load(Yii::$app->request->post()) && $model->validate()) {
+
+
+
+
+
+            $curl = curl_init();
+
+            $url = "https://sandbox2.nganluong.vn/vietcombank-checkout/vcb/api/web/checkout/version_1_0";
+
+            $merchant_passcode = '123456789';
+            $params = [
+                'function' => 'CreateOrder',
+                'merchant_site_code' =>$_POST,
+                'order_code' => $_POST,
+                'order_description' => $_POST,
+                'amount' => $_POST,
+                'currency' => $_POST,
+                'buyer_fullname' => $_POST,
+                'buyer_email' => $_POST,
+                'buyer_mobile' => $_POST,
+                'buyer_address' => $_POST,
+                'return_url' => $_POST,
+                'cancel_url' => $_POST,
+                'notify_url' => $_POST,
+                'language' => $_POST,
+                'version' => $_POST,
+
+
+            ];
+            var_dump($_POST);die;
+            $params['checksum'] = md5($params['merchant_site_code'] . '|' . $params['order_code'] . '|' . $params['order_description'] . '|' . $params['amount'] . '|' . $params['currency'] . '|' . $params['buyer_fullname'] . '|' . $params['buyer_email'] . '|' . $params['buyer_mobile'] . '|' . $params['buyer_address'] . '|' . $params['return_url'] . '|' . $params['cancel_url'] . '|' . $params['notify_url'] . '|' . $params['language'] . '|' . $merchant_passcode);
+
+
+
+            curl_setopt_array($curl, array(
+                CURLOPT_URL => $url,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_ENCODING => '',
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 0,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+                CURLOPT_CUSTOMREQUEST => 'POST',
+                CURLOPT_POSTFIELDS => $params
+            ));
+            $response = curl_exec($curl);
+
+            $data = json_decode($response, true);//chuyển chuỗi
+//        var_dump($data);die;
+            $url = $data['result_data']['checkout_url'];//lấy url
+            header("Location: {$url}");die();
+
+
+            return $this->render('entry-confirm', ['model' => $model]);
+        } else {
+
+            // either the page is initially displayed or there is some validation error
+            return $this->render('entry', ['model' => $model]);
+        }
+    }
+
     /**
      * {@inheritdoc}
      */
@@ -217,8 +289,8 @@ class SiteController extends Controller
      * Verify email address
      *
      * @param string $token
-     * @throws BadRequestHttpException
      * @return yii\web\Response
+     * @throws BadRequestHttpException
      */
     public function actionVerifyEmail($token)
     {
